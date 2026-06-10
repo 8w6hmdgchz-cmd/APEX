@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-os-config
+  namespace: default
+data:
+  config.yaml: |
+    server:
+      host: "0.0.0.0"
+      port: 8080
+    blockchain:
+      difficulty: 4
+      block_interval: 10
+    evolution:
+      population_size: 50
+      mutation_rate: 0.1
+      crossover_rate: 0.7
+    reasoning:
+      max_steps: 10
+    robot:
+      worker_count: 4
+    scheduler:
+      cron_interval: 60
+      max_retries: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-os
+  namespace: default
+  labels:
+    app: agent-os
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agent-os
+  template:
+    metadata:
+      labels:
+        app: agent-os
+    spec:
+      containers:
+        - name: agent-os
+          image: agent-os:2.0.0
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          env:
+            - name: AGENT_OS_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: agent-os-secrets
+                  key: jwt-secret
+                  optional: true
+      volumes:
+        - name: config
+          configMap:
+            name: agent-os-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-os
+  namespace: default
+spec:
+  selector:
+    app: agent-os
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agent-os-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agent-os
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

@@ -1,0 +1,36 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: 30
+  write_timeout: 30
+
+blockchain:
+  difficulty: 4
+  block_interval: 10
+  db_path: "./data/blocks"
+
+evolution:
+  population_size: 50
+  mutation_rate: 0.1
+  crossover_rate: 0.7
+  generations: 100
+
+reasoning:
+  llm_endpoint: "http://localhost:11434"
+  max_steps: 10
+  short_term_ttl: 300
+
+robot:
+  worker_count: 4
+  queue_size: 1000
+  heartbeat_rate: 30
+
+security:
+  encryption_key: ""  # Set via env AGENT_OS_ENC_KEY
+  jwt_secret: ""      # Set via env AGENT_OS_JWT_SECRET
+  jwt_expiry: 3600
+
+scheduler:
+  cron_interval: 60
+  max_retries: 3
+  retry_delay: 5

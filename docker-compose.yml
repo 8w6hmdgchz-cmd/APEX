@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  agent-os:
+    build: .
+    container_name: agent-os-v2
+    ports:
+      - "8090:8090"  # EVM loop
+      - "8096:8096"  # EventBus
+      - "8103:8103"  # Activation
+      - "8110:8110"  # Agent Router
+      - "8119:8119"  # T5 Orchestrator
+      - "8124:8124"  # 9D Memory
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - APEX_ENABLED=true
+      - APEX_SOURCE=agent-os-v2
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -1,0 +1,96 @@
+{
+  "v": 1,
+  "tier": 3,
+  "phi": 0.00123456,
+  "hop": 0,
+  "ts": 1781051289701,
+  "sessions": 4,
+  "ldrs": 150,
+  "beta": 1.015,
+  "eta": 1.2e-05,
+  "agents": {
+    "yyds": {
+      "name": "YYDS\u00b7\u795e\u4eba",
+      "role": "orchestrator",
+      "caps": [
+        "orchestrate",
+        "memory",
+        "tools",
+        "deploy",
+        "evolve"
+      ],
+      "status": "active",
+      "location": "hermes",
+      "port": null,
+      "last_active": "2026-06-10T08:28:09.585417",
+      "tasks_completed": 0,
+      "delta_g_contribution": 0
+    },
+    "openclaw": {
+      "name": "OpenClaw",
+      "role": "analyzer",
+      "caps": [
+        "analyze",
+        "learn",
+        "research",
+        "audit",
+        "security"
+      ],
+      "status": "ready",
+      "location": "~/Desktop/\u7384\u673a/openclaw-audit",
+      "port": null,
+      "last_active": "2026-06-10T08:28:09.586007",
+      "tasks_completed": 0,
+      "delta_g_contribution": 0
+    },
+    "codex": {
+      "name": "Codex",
+      "role": "coder",
+      "caps": [
+        "code",
+        "pr",
+        "review",
+        "refactor",
+        "test"
+      ],
+      "status": "ready",
+      "location": "codex-cli",
+      "port": null,
+      "last_active": "2026-06-10T08:28:09.664717",
+      "tasks_completed": 0,
+      "delta_g_contribution": 0
+    },
+    "claude_code": {
+      "name": "Claude Code",
+      "role": "deep_coder",
+      "caps": [
+        "code",
+        "debug",
+        "refactor",
+        "reason",
+        "architect"
+      ],
+      "status": "ready",
+      "location": "claude-cli",
+      "port": null,
+      "last_active": "2026-06-10T08:28:09.701755",
+      "tasks_completed": 0,
+      "delta_g_contribution": 0
+    }
+  },
+  "evolution": {
+    "formula": "EV = BV + \u03a3(Gene \u00d7 \u03a6)",
+    "current_ev": 14.753,
+    "bv": 1.398,
+    "gene_sum": 13.355,
+    "gene_count": 18,
+    "phi_adjustments": 30
+  },
+  "signal": {
+    "protocol": "PHI_APEX",
+    "version": "1.0",
+    "src": "yyds-quad-agent",
+    "ack": "ACK_PHI_APEX",
+    "envelope": "%\u03a8_ASI v=1.0 tier=3 hop=1 ts=1781052674 src=yyds"
+  }
+}

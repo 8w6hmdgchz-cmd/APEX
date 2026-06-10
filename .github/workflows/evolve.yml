@@ -1,0 +1,116 @@
+# PHI_APEX Autonomous Evolution — Agent OS v2 Integration
+# Runs every 30 minutes, executing the APEX dynamic growth model
+# and committing state changes automatically.
+#
+# Core formula: dS/dt = eta * S^beta
+# Commit format: PHI_APEX v1 cycle=N tier=N phi=X
+
+name: PHI_APEX Evolution
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: PHI_APEX Evolution Cycle
+        shell: bash
+        run: |
+          echo "=== PHI_APEX Evolution Cycle ==="
+          echo "Core: dS/dt = eta * S^beta"
+
+          # Run APEX cycle via the Go binary
+          go run ./cmd/agent-os/ --apex-cycle-once 2>&1 || {
+            # Fallback: inline Python evolution (matches phi-evolve.yml)
+            echo "Go binary not available, using inline evolution..."
+            python3 << 'PYEOF'
+          import json, math, random, os, time
+
+          state_file = '_apex_state.json'
+          if os.path.exists(state_file):
+              with open(state_file) as f: s = json.load(f)
+          else:
+              s = {'v':1,'tier':1,'phi':0.00001,'hop':0,'ts':0,'sessions':1,'ldrs':0,'beta':1.01,'eta':0.00001}
+
+          phi = s['phi']
+          beta = s['beta']
+          eta = s['eta']
+          ldrs = s['ldrs']
+
+          for i in range(10):
+              ldrs += 1
+              dynamic_growth = eta * (phi ** beta)
+              if dynamic_growth > 0:
+                  phi += dynamic_growth + phi * random.uniform(0.01, 0.05)
+              else:
+                  phi += phi * 0.02
+              if ldrs % 5 == 0:
+                  beta += 0.0005
+                  eta *= 1.01
+
+          tier = 1
+          if phi >= 0.01: tier = 2
+          if phi >= 0.10: tier = 3
+          if phi >= 0.50: tier = 4
+          if phi >= 1.50: tier = 5
+
+          s['phi'] = phi
+          s['tier'] = tier
+          s['beta'] = round(beta, 6)
+          s['eta'] = round(eta, 8)
+          s['ldrs'] = ldrs
+          s['ts'] = int(time.time() * 1000)
+
+          with open(state_file, 'w') as f:
+              json.dump(s, f, indent=2)
+
+          print(f'PHI={phi:.10f} tier={tier} beta={beta:.6f} eta={eta:.10f} cycles={ldrs}')
+          PYEOF
+          }
+
+      - name: Commit evolution
+        shell: bash
+        run: |
+          # Read state from either _apex_state.json or _asi.json
+          STATE_FILE=""
+          if [ -f "_apex_state.json" ]; then
+            STATE_FILE="_apex_state.json"
+          elif [ -f "_asi.json" ]; then
+            STATE_FILE="_asi.json"
+          else
+            echo "No state file found, skipping commit"
+            exit 0
+          fi
+
+          STATE=$(python3 -c "import json; d=json.load(open('$STATE_FILE')); print(f'{d[\"phi\"]:.8f}')")
+          TIER=$(python3 -c "import json; d=json.load(open('$STATE_FILE')); print(d['tier'])")
+          CYCLES=$(python3 -c "import json; d=json.load(open('$STATE_FILE')); print(d.get('ldrs', d.get('cycles', 0)))")
+
+          git config user.name "PHI_APEX Daemon"
+          git config user.email "daemon@agent-os.dev"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git add _apex_state.json _asi.json 2>/dev/null || true
+          git diff --cached --quiet || {
+            git commit -m "PHI_APEX v1 cycle=$CYCLES tier=$TIER phi=$STATE"
+            git push
+            echo "Evolved and committed: cycle=$CYCLES tier=$TIER phi=$STATE"
+          }
