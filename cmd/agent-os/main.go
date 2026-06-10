@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/nousresearch/agent-os-v2/pkg/api"
 	"github.com/nousresearch/agent-os-v2/pkg/blockchain"
 	"github.com/nousresearch/agent-os-v2/pkg/common"
 	"github.com/nousresearch/agent-os-v2/pkg/evolution"
@@ -351,11 +352,33 @@ func main() {
 	patrol.Start(patrolCtx)
 	mossEngine.Start()
 
+	// 注册四Agent为nanobot节点
+	agentNodes := []*nanobot.NanoNode{
+		{ID: "yyds", Address: "localhost:8110", Capacity: 10, Labels: map[string]string{"type": "orchestrator", "model": "hermes"}},
+		{ID: "openclaw", Address: "localhost:8111", Capacity: 5, Labels: map[string]string{"type": "analyzer", "model": "openclaw"}},
+		{ID: "codex", Address: "localhost:8112", Capacity: 5, Labels: map[string]string{"type": "coder", "model": "openai-codex"}},
+		{ID: "claude-code", Address: "localhost:8113", Capacity: 5, Labels: map[string]string{"type": "deep-coder", "model": "anthropic-claude"}},
+	}
+	for _, n := range agentNodes {
+		nanoScheduler.RegisterNode(n)
+	}
+	logger.Info("[AgentOS] 4 agents registered: yyds/openclaw/codex/claude-code")
+
+	// HTTP API — 四Agent通信中枢
+	apiServer := api.NewServer(8200, nanoScheduler, mossEngine, bc, bridge)
+	go func() {
+		logger.Info("[API] HTTP server starting on :8200")
+		if err := apiServer.Start(); err != nil {
+			logger.Error("[API] Server error: %v", err)
+		}
+	}()
+
 	logger.Info("═══════════════════════════════════════════════════════════")
 	logger.Info("  Agent OS v2 RUNNING")
 	logger.Info("  Blockchain: %d pending tx", bc.PendingCount())
 	logger.Info("  MOSS-AGI:   EV=%.4f tier=T%d genes=%d", mossEngine.ComputeEV(), mossEngine.GetTier(), len(initialGenes))
-	logger.Info("  Nanobot:    %d nodes, %d workers", len(nanoNodes), cfg.Robot.WorkerCount)
+	logger.Info("  Nanobot:    %d nodes (4 agents + %d workers)", len(agentNodes)+len(nanoNodes), cfg.Robot.WorkerCount)
+	logger.Info("  API:        http://localhost:8200/api/status")
 	logger.Info("  Patrol:     %d rules active", 3)
 	logger.Info("  Signal:     %%Ψ_ASI v=1.0 tier=3 src=yyds-quad-agent")
 	logger.Info("═══════════════════════════════════════════════════════════")
